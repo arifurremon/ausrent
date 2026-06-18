@@ -1,0 +1,627 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AusRent — Real Estate Platform</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Space+Mono:wght@400;700&display=swap');
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --sky: #0EA5E9;
+    --deep: #0A1628;
+    --card: #0F2040;
+    --glow: #38BDF8;
+    --gold: #F59E0B;
+    --white: #F0F9FF;
+    --muted: #94A3B8;
+    --green: #10B981;
+  }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--deep);
+    color: var(--white);
+    font-family: 'Space Grotesk', sans-serif;
+    overflow-x: hidden;
+  }
+
+  /* ── CANVAS BG ── */
+  #bg { position: fixed; inset: 0; z-index: 0; }
+
+  /* ── WRAPPER ── */
+  .wrap { position: relative; z-index: 1; }
+
+  /* ── NAV ── */
+  nav {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 1.2rem 3rem;
+    background: rgba(10,22,40,0.7);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid rgba(56,189,248,0.15);
+  }
+  .logo {
+    font-family: 'Space Mono', monospace;
+    font-size: 1.3rem; font-weight: 700;
+    color: var(--glow);
+    letter-spacing: 2px;
+  }
+  .badge {
+    background: rgba(245,158,11,0.15);
+    border: 1px solid var(--gold);
+    color: var(--gold);
+    font-size: 0.7rem; font-weight: 600;
+    padding: 0.3rem 0.8rem; border-radius: 20px;
+    letter-spacing: 1px;
+    animation: pulse 2s ease-in-out infinite;
+  }
+  @keyframes pulse {
+    0%,100% { box-shadow: 0 0 0 0 rgba(245,158,11,0.4); }
+    50% { box-shadow: 0 0 0 8px rgba(245,158,11,0); }
+  }
+
+  /* ── HERO ── */
+  .hero {
+    min-height: 100vh;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    text-align: center;
+    padding: 6rem 2rem 4rem;
+  }
+  .hero-eyebrow {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.75rem; letter-spacing: 4px;
+    color: var(--sky); margin-bottom: 1.5rem;
+    opacity: 0; animation: fadeUp 0.8s 0.2s forwards;
+  }
+  .hero h1 {
+    font-size: clamp(3rem, 8vw, 6.5rem);
+    font-weight: 700; line-height: 1.0;
+    opacity: 0; animation: fadeUp 0.8s 0.4s forwards;
+  }
+  .hero h1 span {
+    background: linear-gradient(135deg, var(--sky) 0%, var(--glow) 50%, var(--gold) 100%);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .hero-sub {
+    font-size: 1.1rem; color: var(--muted); max-width: 540px;
+    margin: 1.5rem auto 0; line-height: 1.7;
+    opacity: 0; animation: fadeUp 0.8s 0.6s forwards;
+  }
+  .hero-cta {
+    display: flex; gap: 1rem; margin-top: 2.5rem; flex-wrap: wrap; justify-content: center;
+    opacity: 0; animation: fadeUp 0.8s 0.8s forwards;
+  }
+  .btn-primary {
+    padding: 0.85rem 2rem; border-radius: 8px;
+    background: linear-gradient(135deg, var(--sky), var(--glow));
+    color: var(--deep); font-weight: 700; font-size: 0.95rem;
+    text-decoration: none; border: none; cursor: pointer;
+    transition: transform 0.2s, box-shadow 0.2s;
+  }
+  .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(14,165,233,0.4); }
+  .btn-outline {
+    padding: 0.85rem 2rem; border-radius: 8px;
+    border: 1px solid rgba(56,189,248,0.4);
+    color: var(--glow); font-weight: 600; font-size: 0.95rem;
+    text-decoration: none; background: transparent; cursor: pointer;
+    transition: background 0.2s, transform 0.2s;
+  }
+  .btn-outline:hover { background: rgba(56,189,248,0.1); transform: translateY(-2px); }
+
+  /* ── 3D CARD SCENE ── */
+  .scene {
+    perspective: 1200px;
+    width: 340px; height: 200px;
+    margin: 3rem auto 0;
+    opacity: 0; animation: fadeUp 0.8s 1s forwards;
+  }
+  .card-3d {
+    width: 100%; height: 100%;
+    transform-style: preserve-3d;
+    animation: cardFloat 6s ease-in-out infinite;
+    position: relative;
+  }
+  .card-face {
+    position: absolute; inset: 0;
+    background: linear-gradient(135deg, #0F2040 0%, #1E3A5F 100%);
+    border: 1px solid rgba(56,189,248,0.3);
+    border-radius: 16px;
+    padding: 1.5rem;
+    backface-visibility: hidden;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.5), 0 0 40px rgba(14,165,233,0.15);
+  }
+  .card-map {
+    width: 100%; height: 80px;
+    border-radius: 8px;
+    background: linear-gradient(135deg, #0D2137, #1a3a5e);
+    position: relative; overflow: hidden;
+    margin-bottom: 0.8rem;
+  }
+  .map-dot {
+    position: absolute;
+    width: 8px; height: 8px; border-radius: 50%;
+    background: var(--sky);
+    box-shadow: 0 0 10px var(--sky);
+    animation: mapPing 2s ease-in-out infinite;
+  }
+  .map-dot:nth-child(1) { top: 30%; left: 40%; animation-delay: 0s; }
+  .map-dot:nth-child(2) { top: 50%; left: 65%; animation-delay: 0.7s; background: var(--gold); box-shadow: 0 0 10px var(--gold); }
+  .map-dot:nth-child(3) { top: 70%; left: 25%; animation-delay: 1.4s; background: var(--green); box-shadow: 0 0 10px var(--green); }
+  @keyframes mapPing {
+    0%,100% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(1.6); opacity: 0.6; }
+  }
+  .card-title { font-size: 0.8rem; font-weight: 600; color: var(--white); }
+  .card-price { font-size: 1rem; font-weight: 700; color: var(--sky); margin-top: 0.2rem; }
+  @keyframes cardFloat {
+    0%,100% { transform: rotateX(8deg) rotateY(-12deg) translateY(0); }
+    33% { transform: rotateX(-5deg) rotateY(8deg) translateY(-10px); }
+    66% { transform: rotateX(10deg) rotateY(15deg) translateY(-5px); }
+  }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* ── SECTION ── */
+  section { padding: 5rem 2rem; max-width: 1100px; margin: 0 auto; }
+  .section-label {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.7rem; letter-spacing: 4px;
+    color: var(--sky); margin-bottom: 0.8rem;
+  }
+  .section-title {
+    font-size: clamp(1.8rem, 4vw, 2.8rem);
+    font-weight: 700; margin-bottom: 0.5rem;
+  }
+  .section-sub { color: var(--muted); max-width: 520px; line-height: 1.7; margin-bottom: 3rem; }
+
+  /* ── TECH STACK ── */
+  .tech-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+  }
+  .tech-card {
+    background: var(--card);
+    border: 1px solid rgba(56,189,248,0.12);
+    border-radius: 12px; padding: 1.5rem;
+    transition: transform 0.3s, border-color 0.3s, box-shadow 0.3s;
+    cursor: default;
+  }
+  .tech-card:hover {
+    transform: translateY(-6px) rotateX(5deg);
+    border-color: rgba(56,189,248,0.5);
+    box-shadow: 0 12px 32px rgba(14,165,233,0.2);
+  }
+  .tech-icon { font-size: 2rem; margin-bottom: 0.8rem; }
+  .tech-name { font-size: 1rem; font-weight: 600; margin-bottom: 0.3rem; }
+  .tech-role { font-size: 0.8rem; color: var(--muted); }
+
+  /* ── FEATURES ── */
+  .features-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 1.5rem;
+  }
+  .feat-card {
+    background: linear-gradient(135deg, var(--card), rgba(14,165,233,0.05));
+    border: 1px solid rgba(56,189,248,0.12);
+    border-radius: 16px; padding: 2rem;
+    position: relative; overflow: hidden;
+    transition: transform 0.3s, box-shadow 0.3s;
+  }
+  .feat-card::before {
+    content: '';
+    position: absolute; top: 0; left: 0; right: 0; height: 2px;
+    background: linear-gradient(90deg, transparent, var(--sky), transparent);
+    opacity: 0; transition: opacity 0.3s;
+  }
+  .feat-card:hover { transform: translateY(-4px); box-shadow: 0 16px 40px rgba(0,0,0,0.3); }
+  .feat-card:hover::before { opacity: 1; }
+  .feat-icon { font-size: 2rem; margin-bottom: 1rem; }
+  .feat-title { font-size: 1.1rem; font-weight: 600; margin-bottom: 0.5rem; }
+  .feat-desc { font-size: 0.88rem; color: var(--muted); line-height: 1.6; }
+
+  /* ── STATS ── */
+  .stats-row {
+    display: flex; gap: 2rem; flex-wrap: wrap;
+    justify-content: center; margin: 4rem 0;
+    padding: 2.5rem;
+    background: var(--card);
+    border: 1px solid rgba(56,189,248,0.12);
+    border-radius: 20px;
+  }
+  .stat { text-align: center; }
+  .stat-num {
+    font-family: 'Space Mono', monospace;
+    font-size: 2.5rem; font-weight: 700;
+    background: linear-gradient(135deg, var(--sky), var(--gold));
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .stat-label { font-size: 0.8rem; color: var(--muted); margin-top: 0.3rem; letter-spacing: 1px; }
+
+  /* ── CERTS ── */
+  .certs-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 1rem;
+  }
+  .cert-card {
+    background: var(--card);
+    border: 1px solid rgba(56,189,248,0.12);
+    border-radius: 12px; padding: 1.2rem 1.5rem;
+    display: flex; align-items: center; gap: 1rem;
+    transition: transform 0.2s, border-color 0.2s;
+  }
+  .cert-card:hover { transform: translateX(4px); border-color: rgba(16,185,129,0.5); }
+  .cert-badge {
+    width: 42px; height: 42px; border-radius: 10px;
+    background: linear-gradient(135deg, #10B981, #059669);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.2rem; flex-shrink: 0;
+  }
+  .cert-name { font-size: 0.85rem; font-weight: 600; }
+  .cert-date { font-size: 0.72rem; color: var(--muted); }
+
+  /* ── AUTHOR ── */
+  .author-card {
+    background: var(--card);
+    border: 1px solid rgba(56,189,248,0.2);
+    border-radius: 20px; padding: 2.5rem;
+    display: flex; align-items: center; gap: 2rem; flex-wrap: wrap;
+  }
+  .author-avatar {
+    width: 80px; height: 80px; border-radius: 50%;
+    background: linear-gradient(135deg, var(--sky), var(--gold));
+    display: flex; align-items: center; justify-content: center;
+    font-size: 2rem; font-weight: 700; color: var(--deep);
+    flex-shrink: 0;
+  }
+  .author-name { font-size: 1.4rem; font-weight: 700; }
+  .author-role { color: var(--sky); font-size: 0.9rem; margin-bottom: 0.8rem; }
+  .author-links { display: flex; gap: 0.8rem; flex-wrap: wrap; }
+  .author-link {
+    padding: 0.4rem 1rem; border-radius: 6px;
+    border: 1px solid rgba(56,189,248,0.3);
+    color: var(--glow); font-size: 0.8rem;
+    text-decoration: none; font-family: 'Space Mono', monospace;
+    transition: background 0.2s;
+  }
+  .author-link:hover { background: rgba(56,189,248,0.1); }
+
+  /* ── DIVIDER ── */
+  .divider {
+    width: 100%; height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(56,189,248,0.3), transparent);
+    margin: 0 auto;
+  }
+
+  /* ── FOOTER ── */
+  footer {
+    text-align: center; padding: 2rem;
+    color: var(--muted); font-size: 0.8rem;
+    font-family: 'Space Mono', monospace;
+  }
+
+  /* ── SCROLL REVEAL ── */
+  .reveal { opacity: 0; transform: translateY(30px); transition: opacity 0.7s, transform 0.7s; }
+  .reveal.visible { opacity: 1; transform: translateY(0); }
+</style>
+</head>
+<body>
+
+<canvas id="bg"></canvas>
+
+<div class="wrap">
+  <nav>
+    <div class="logo">AUSRENT</div>
+    <div class="badge">🚧 IN DEVELOPMENT</div>
+  </nav>
+
+  <!-- HERO -->
+  <div class="hero">
+    <div class="hero-eyebrow">FULL-STACK REAL ESTATE PLATFORM</div>
+    <h1>Find Your<br><span>Dream Home</span></h1>
+    <p class="hero-sub">Interactive map-based property search, powered by React, Node.js, PostgreSQL & Mapbox.</p>
+    <div class="hero-cta">
+      <a href="https://github.com/arifurremon/ausrent" target="_blank" class="btn-primary">View on GitHub</a>
+      <a href="https://www.linkedin.com/in/arifur-rahman-emon-0792953ab" target="_blank" class="btn-outline">Connect</a>
+    </div>
+
+    <!-- 3D floating card -->
+    <div class="scene">
+      <div class="card-3d">
+        <div class="card-face">
+          <div class="card-map">
+            <div class="map-dot"></div>
+            <div class="map-dot"></div>
+            <div class="map-dot"></div>
+          </div>
+          <div class="card-title">🏠 3BR · Beachside Property</div>
+          <div class="card-price">AUD $1,250,000</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- STATS -->
+  <div style="max-width:1100px;margin:0 auto;padding:0 2rem;">
+    <div class="stats-row reveal">
+      <div class="stat"><div class="stat-num">5+</div><div class="stat-label">TECH LAYERS</div></div>
+      <div class="stat"><div class="stat-num">100%</div><div class="stat-label">TYPESCRIPT</div></div>
+      <div class="stat"><div class="stat-num">REST</div><div class="stat-label">API DESIGN</div></div>
+      <div class="stat"><div class="stat-num">MAP</div><div class="stat-label">INTERACTIVE</div></div>
+    </div>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- TECH STACK -->
+  <section class="reveal">
+    <div class="section-label">BUILT WITH</div>
+    <div class="section-title">Tech Stack</div>
+    <p class="section-sub">Modern full-stack architecture designed for scale and developer experience.</p>
+    <div class="tech-grid">
+      <div class="tech-card">
+        <div class="tech-icon">⚛️</div>
+        <div class="tech-name">React</div>
+        <div class="tech-role">Frontend UI</div>
+      </div>
+      <div class="tech-card">
+        <div class="tech-icon">🔷</div>
+        <div class="tech-name">TypeScript</div>
+        <div class="tech-role">Type Safety</div>
+      </div>
+      <div class="tech-card">
+        <div class="tech-icon">🟢</div>
+        <div class="tech-name">Node.js</div>
+        <div class="tech-role">Runtime</div>
+      </div>
+      <div class="tech-card">
+        <div class="tech-icon">🚂</div>
+        <div class="tech-name">Express.js</div>
+        <div class="tech-role">REST API</div>
+      </div>
+      <div class="tech-card">
+        <div class="tech-icon">🐘</div>
+        <div class="tech-name">PostgreSQL</div>
+        <div class="tech-role">Database</div>
+      </div>
+      <div class="tech-card">
+        <div class="tech-icon">🗺️</div>
+        <div class="tech-name">Mapbox</div>
+        <div class="tech-role">Maps & Location</div>
+      </div>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- FEATURES -->
+  <section class="reveal">
+    <div class="section-label">CAPABILITIES</div>
+    <div class="section-title">Key Features</div>
+    <p class="section-sub">Everything you need to discover, filter, and explore property listings.</p>
+    <div class="features-grid">
+      <div class="feat-card">
+        <div class="feat-icon">🗺️</div>
+        <div class="feat-title">Interactive Map Search</div>
+        <div class="feat-desc">Browse properties visually on a live Mapbox-powered map with pin clustering and location filters.</div>
+      </div>
+      <div class="feat-card">
+        <div class="feat-icon">🔍</div>
+        <div class="feat-title">Smart Filtering</div>
+        <div class="feat-desc">Filter listings by price, bedrooms, location, and property type with instant results.</div>
+      </div>
+      <div class="feat-card">
+        <div class="feat-icon">📱</div>
+        <div class="feat-title">Responsive Design</div>
+        <div class="feat-desc">Fully responsive layout that works seamlessly across desktop, tablet, and mobile.</div>
+      </div>
+      <div class="feat-card">
+        <div class="feat-icon">⚡</div>
+        <div class="feat-title">RESTful API</div>
+        <div class="feat-desc">Clean Express.js backend with structured routes, controllers, and PostgreSQL queries.</div>
+      </div>
+      <div class="feat-card">
+        <div class="feat-icon">🗄️</div>
+        <div class="feat-title">Relational Database</div>
+        <div class="feat-desc">Structured property data stored in PostgreSQL with efficient queries and indexing.</div>
+      </div>
+      <div class="feat-card">
+        <div class="feat-icon">🔒</div>
+        <div class="feat-title">Type-Safe Codebase</div>
+        <div class="feat-desc">End-to-end TypeScript for reduced runtime errors and better developer experience.</div>
+      </div>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- CERTIFICATIONS -->
+  <section class="reveal">
+    <div class="section-label">CREDENTIALS</div>
+    <div class="section-title">HackerRank Certifications</div>
+    <p class="section-sub">Verified technical skills through HackerRank's official certification program.</p>
+    <div class="certs-grid">
+      <div class="cert-card">
+        <div class="cert-badge">💼</div>
+        <div>
+          <div class="cert-name">Software Engineer Intern</div>
+          <div class="cert-date">Jun 2026 · ID: FA8209D6A4AA</div>
+        </div>
+      </div>
+      <div class="cert-card">
+        <div class="cert-badge">🗃️</div>
+        <div>
+          <div class="cert-name">SQL (Advanced)</div>
+          <div class="cert-date">Jun 2026 · ID: E3C908467559</div>
+        </div>
+      </div>
+      <div class="cert-card">
+        <div class="cert-badge">🧩</div>
+        <div>
+          <div class="cert-name">Problem Solving (Intermediate)</div>
+          <div class="cert-date">Jun 2026 · ID: C2B643BA2324</div>
+        </div>
+      </div>
+      <div class="cert-card">
+        <div class="cert-badge">☕</div>
+        <div>
+          <div class="cert-name">Java (Basic)</div>
+          <div class="cert-date">Jun 2026 · ID: DA7F447E2C62</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- AUTHOR -->
+  <section class="reveal">
+    <div class="section-label">DEVELOPER</div>
+    <div class="section-title">About the Author</div>
+    <div class="author-card">
+      <div class="author-avatar">AR</div>
+      <div>
+        <div class="author-name">Arifur Rahman</div>
+        <div class="author-role">CSE Student · Premier University Chittagong</div>
+        <div class="author-links">
+          <a href="https://github.com/arifurremon" target="_blank" class="author-link">GitHub</a>
+          <a href="https://www.linkedin.com/in/arifur-rahman-emon-0792953ab" target="_blank" class="author-link">LinkedIn</a>
+          <a href="mailto:arifurrahman8121@gmail.com" class="author-link">Email</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    © 2026 Arifur Rahman · AusRent · MIT License
+  </footer>
+</div>
+
+<script>
+// ── PARTICLE BG ──
+const canvas = document.getElementById('bg');
+const ctx = canvas.getContext('2d');
+let W, H, particles = [];
+
+function resize() {
+  W = canvas.width = window.innerWidth;
+  H = canvas.height = window.innerHeight;
+}
+resize();
+window.addEventListener('resize', resize);
+
+class Particle {
+  constructor() { this.reset(); }
+  reset() {
+    this.x = Math.random() * W;
+    this.y = Math.random() * H;
+    this.r = Math.random() * 1.5 + 0.3;
+    this.vx = (Math.random() - 0.5) * 0.3;
+    this.vy = (Math.random() - 0.5) * 0.3;
+    this.alpha = Math.random() * 0.5 + 0.1;
+    this.color = Math.random() > 0.7 ? '#F59E0B' : '#0EA5E9';
+  }
+  update() {
+    this.x += this.vx; this.y += this.vy;
+    if (this.x < 0 || this.x > W || this.y < 0 || this.y > H) this.reset();
+  }
+  draw() {
+    ctx.beginPath();
+    ctx.arc(this.x, this.y, this.r, 0, Math.PI * 2);
+    ctx.fillStyle = this.color;
+    ctx.globalAlpha = this.alpha;
+    ctx.fill();
+  }
+}
+
+for (let i = 0; i < 120; i++) particles.push(new Particle());
+
+// Grid lines
+function drawGrid() {
+  ctx.globalAlpha = 0.03;
+  ctx.strokeStyle = '#0EA5E9';
+  ctx.lineWidth = 1;
+  const spacing = 80;
+  for (let x = 0; x < W; x += spacing) {
+    ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke();
+  }
+  for (let y = 0; y < H; y += spacing) {
+    ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke();
+  }
+}
+
+// Connect nearby particles
+function drawConnections() {
+  for (let i = 0; i < particles.length; i++) {
+    for (let j = i + 1; j < particles.length; j++) {
+      const dx = particles[i].x - particles[j].x;
+      const dy = particles[i].y - particles[j].y;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+      if (dist < 100) {
+        ctx.globalAlpha = (1 - dist / 100) * 0.08;
+        ctx.strokeStyle = '#38BDF8';
+        ctx.lineWidth = 0.5;
+        ctx.beginPath();
+        ctx.moveTo(particles[i].x, particles[i].y);
+        ctx.lineTo(particles[j].x, particles[j].y);
+        ctx.stroke();
+      }
+    }
+  }
+}
+
+function animate() {
+  ctx.clearRect(0, 0, W, H);
+  ctx.globalAlpha = 1;
+  ctx.fillStyle = '#0A1628';
+  ctx.fillRect(0, 0, W, H);
+  drawGrid();
+  drawConnections();
+  particles.forEach(p => { p.update(); p.draw(); });
+  requestAnimationFrame(animate);
+}
+animate();
+
+// ── 3D CARD MOUSE TILT ──
+const scene = document.querySelector('.scene');
+const card3d = document.querySelector('.card-3d');
+if (scene && card3d) {
+  scene.addEventListener('mousemove', (e) => {
+    const rect = scene.getBoundingClientRect();
+    const cx = rect.left + rect.width / 2;
+    const cy = rect.top + rect.height / 2;
+    const rx = ((e.clientY - cy) / (rect.height / 2)) * -20;
+    const ry = ((e.clientX - cx) / (rect.width / 2)) * 20;
+    card3d.style.animation = 'none';
+    card3d.style.transform = `rotateX(${rx}deg) rotateY(${ry}deg)`;
+  });
+  scene.addEventListener('mouseleave', () => {
+    card3d.style.animation = 'cardFloat 6s ease-in-out infinite';
+  });
+}
+
+// ── SCROLL REVEAL ──
+const reveals = document.querySelectorAll('.reveal');
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach((e, i) => {
+    if (e.isIntersecting) {
+      setTimeout(() => e.target.classList.add('visible'), i * 100);
+    }
+  });
+}, { threshold: 0.1 });
+reveals.forEach(r => observer.observe(r));
+</script>
+</body>
+</html>
